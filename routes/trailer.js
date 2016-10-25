@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
-var request = require('request-json');
+var request = require('request-json'),
+async = require('async');
 
 const THE_MOVIE_DB_KEY = '0222784cb8d961b26e04d4b2891d8d30';
 
@@ -19,42 +20,58 @@ router.post('/', function(req, res, next) {
 	}
 
 	if (client) {
-		//console.log(req);
-		client.get(req.body.trailer).then(function(responseViaPlay) {
-			// https://api.themoviedb.org/3/find/tt2637276?api_key=0222784cb8d961b26e04d4b2891d8d30&language=en-US&external_source=imdb_id
-			var movieID = responseViaPlay.body._embedded["viaplay:blocks"][0]._embedded["viaplay:product"].content.imdb.id;
-			console.log(movieID);
 
-			var url = 'find/'+movieID+'?api_key='+THE_MOVIE_DB_KEY+'&language=en-US&external_source=imdb_id';
+		async.waterfall([
+			function(callback) {
+				client.get(req.body.trailer).then(function(responseViaPlay) {
+					var movieID = responseViaPlay.body._embedded["viaplay:blocks"][0]._embedded["viaplay:product"].content.imdb.id;
 
-			IMDB_CLIENT.get(url).then(function(responseIMDB) {
-				var url = 'movie/'+movieID+'/videos?api_key='+THE_MOVIE_DB_KEY+'&language=en-US';
+					var url = 'find/'+movieID+'?api_key='+THE_MOVIE_DB_KEY+'&language=en-US&external_source=imdb_id';
+					
+					callback(null, url);
+
+				}).catch(function(error) {
+					callback(error);
+				});
+			},
+			function(url, callback) {
+				IMDB_CLIENT.get(url).then(function(responseIMDB) {
+					var nextURL = 'movie/'+responseIMDB.body.movie_results[0].id+'/videos?api_key='+THE_MOVIE_DB_KEY+'&language=en-US';
+					callback(null, nextURL);
+				}).catch(function(error) {
+					callback(error);
+				});
+			},
+			function(url, callback) {
 				IMDB_CLIENT_VIDEO.get(url).then(function(result) {
-					console.log(result.body);
+					var key;
 					var results = result.body.results;
 					for (var i = results.length - 1; i >= 0; i--) {
-						var key;
 						if (results[i].site === 'YouTube' && results[i].type === 'Trailer') {
 							key = results[i].key;
+							break;
 						}
 					};
 					if (key) {
 						var youtubeURL = 'https://www.youtube.com/watch?v='+key;
-						res.send(youtubeURL);
+						callback(null, youtubeURL);
 					} else {
-						res.sendStatus(404);
+						callback(404);
 					}
 				}).catch(function(error) {
-					res.send(error);
+					callback(error);
 				});
-				
-			}).catch(function(error) {
-				res.send(error);
-			});
-			
-
-		}).catch(function(error) {
-			res.sendStatus(500);
+			}
+		], function (error, result) {
+			if (error) {
+				if (typeof error === 'number') {
+					res.sendStatus(error);
+				} else {
+					res.send(error);
+				}
+			} else {
+				res.send(result);
+			}
 		});
 	} else {
 		res.sendStatus(406);
