@@ -27,7 +27,19 @@ module.exports = {
 		return promise;
 	},
 	deleteAll: function() {
-		trailers = new Map();
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				trailers = new Map();
+				resolve(true);	
+			} catch(error) {
+				reject(error);
+			}
+			
+		});
+		return promise;
+	},
+	getCount: function() {
+		return trailers.size;
 	}
 }
 
