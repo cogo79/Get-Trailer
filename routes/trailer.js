@@ -12,8 +12,6 @@ var ViaPlay = request.createClient(VIAPLAYURL);
 const IMDB_CLIENT = request.createClient('https://api.themoviedb.org/3/find');
 const IMDB_CLIENT_VIDEO = request.createClient('https://api.themoviedb.org/3/movie');
 
-
-/* GET users listing. */
 router.post('/', function(req, res, next) {
 
 	cachedTrailers.get(req.body.trailer).then(function(result) {
