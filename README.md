@@ -1,6 +1,6 @@
 # Get-Trailer
 
-I used Node version 4.4.4 and npm version 2.15.1. So if you run in to any trouble with runing this server you can try to change to does versions.
+I used Node version 4.4.4 and npm version 2.15.1. So if you run in to any trouble with runing this server you can try to change to does versions. Here is a handy link that I like for changing Node version.
 
 After you have cloned this repository "cd" in to it in the terminal and run "npm install".
 
