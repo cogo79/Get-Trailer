@@ -4,6 +4,8 @@ I used Node version 4.4.4 and npm version 2.15.1. So if you run in to any troubl
 
 After you have cloned this repository "cd" in to it in the terminal and run "npm install".
 
+And then to start the server, type "npm start" in the terminal.
+
 To test the server you can run the following command in the terminal:
 curl -H Content-Type:application/json -X POST -d '{"trailer":"https://content.viaplay.se/pc-se/film/ted-2-2015"}' http://localhost:3000/trailer
 
