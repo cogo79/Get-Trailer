@@ -18,75 +18,80 @@ router.post('/', function(req, res, next) {
 		if (result) {
 			res.send(result);
 		} else {
-			var client;
-			if (req.body.trailer.startsWith(VIAPLAYURL)) {
-				client = ViaPlay;
-			}
-
-			if (client) {
-
-				async.waterfall([
-					function(callback) {
-						client.get(req.body.trailer).then(function(responseViaPlay) {
-							var movieID = responseViaPlay.body._embedded["viaplay:blocks"][0]._embedded["viaplay:product"].content.imdb.id;
-
-							var url = 'find/'+movieID+'?api_key='+THE_MOVIE_DB_KEY+'&language=en-US&external_source=imdb_id';
-							
-							callback(null, url);
-
-						}).catch(function(error) {
-							callback(error);
-						});
-					},
-					function(url, callback) {
-						IMDB_CLIENT.get(url).then(function(responseIMDB) {
-							var nextURL = 'movie/'+responseIMDB.body.movie_results[0].id+'/videos?api_key='+THE_MOVIE_DB_KEY+'&language=en-US';
-							callback(null, nextURL);
-						}).catch(function(error) {
-							callback(error);
-						});
-					},
-					function(url, callback) {
-						IMDB_CLIENT_VIDEO.get(url).then(function(result) {
-							var key;
-							var results = result.body.results;
-							for (var i = results.length - 1; i >= 0; i--) {
-								if (results[i].site === 'YouTube' && results[i].type === 'Trailer') {
-									key = results[i].key;
-									break;
-								}
-							};
-							if (key) {
-								var youtubeURL = 'https://www.youtube.com/watch?v='+key;
-								callback(null, youtubeURL);
-							} else {
-								callback(404);
-							}
-						}).catch(function(error) {
-							callback(error);
-						});
-					},
-					function(result, callback) {
-						cachedTrailers.add(req.body.trailer, result).then(function(succes) {
-							callback(null, result);
-						});
-					}
-				], function (error, result) {
-					if (error) {
-						if (typeof error === 'number') {
-							res.sendStatus(error);
-						} else {
-							res.send(error);
-						}
-					} else {
-						res.send(result);
-					}
-				});
-			} else {
-				res.sendStatus(406);
-			}
+			fetch();
 		}
+	}, function(error) {
+		fetch();
 	});
+	function fetch() {
+		var client;
+		if (req.body.trailer.startsWith(VIAPLAYURL)) {
+			client = ViaPlay;
+		}
+
+		if (client) {
+
+			async.waterfall([
+				function(callback) {
+					client.get(req.body.trailer).then(function(responseViaPlay) {
+						var movieID = responseViaPlay.body._embedded["viaplay:blocks"][0]._embedded["viaplay:product"].content.imdb.id;
+
+						var url = 'find/'+movieID+'?api_key='+THE_MOVIE_DB_KEY+'&language=en-US&external_source=imdb_id';
+						
+						callback(null, url);
+
+					}).catch(function(error) {
+						callback(error);
+					});
+				},
+				function(url, callback) {
+					IMDB_CLIENT.get(url).then(function(responseIMDB) {
+						var nextURL = 'movie/'+responseIMDB.body.movie_results[0].id+'/videos?api_key='+THE_MOVIE_DB_KEY+'&language=en-US';
+						callback(null, nextURL);
+					}).catch(function(error) {
+						callback(error);
+					});
+				},
+				function(url, callback) {
+					IMDB_CLIENT_VIDEO.get(url).then(function(result) {
+						var key;
+						var results = result.body.results;
+						for (var i = results.length - 1; i >= 0; i--) {
+							if (results[i].site === 'YouTube' && results[i].type === 'Trailer') {
+								key = results[i].key;
+								break;
+							}
+						};
+						if (key) {
+							var youtubeURL = 'https://www.youtube.com/watch?v='+key;
+							callback(null, youtubeURL);
+						} else {
+							callback(404);
+						}
+					}).catch(function(error) {
+						callback(error);
+					});
+				},
+				function(result, callback) {
+					cachedTrailers.add(req.body.trailer, result).then(function(succes) {
+						callback(null, result);
+					});
+				}
+			], function (error, result) {
+				if (error) {
+					if (typeof error === 'number') {
+						res.sendStatus(error);
+					} else {
+						res.send(error);
+					}
+				} else {
+					res.send(result);
+				}
+			});
+		} else {
+			res.sendStatus(406);
+		}
+	}
 });
 
 
